@@ -1,0 +1,21 @@
+{
+    "@metadata": {
+        "authors": [
+            "codedbyjake"
+        ]
+    },
+    "right-imgguard-bypass": "Skip upload content screening",
+    "right-imgguard-log": "View the upload screening log",
+    "right-imgguard-autoblock-exempt": "Be exempt from the automatic block after repeated rejected uploads",
+    "imgguard-rejected": "This file could not be uploaded because it did not pass content screening.",
+    "imgguard-busy": "Too many uploads are being screened at once. Please try again in a moment.",
+    "log-name-imgguard": "Upload screening log",
+    "log-description-imgguard": "This log records decisions made when screening uploaded files for explicit content.",
+    "logentry-imgguard-reject": "$1 {{GENDER:$2|attempted}} to upload $3, blocked by content screening (safe score $6)",
+    "logentry-imgguard-monitor": "$1 {{GENDER:$2|uploaded}} $3, which content screening would have blocked (safe score $6)",
+    "logentry-imgguard-fail": "$1 {{GENDER:$2|attempted}} to upload $3, which could not be screened ($15)",
+    "logentry-imgguard-pass": "$1 {{GENDER:$2|uploaded}} $3 (safe score $6)",
+    "logentry-imgguard-borderline": "$1 {{GENDER:$2|uploaded}} $3, close to the screening threshold (safe score $6)",
+    "logentry-imgguard-autoblock": "$1 automatically {{GENDER:$2|blocked}} $3 for $4 after $5 rejected uploads",
+    "imgguard-autoblock-reason": "Automatically blocked following repeated rejected uploads"
+}

@@ -1,0 +1,160 @@
+{
+  "name": "ImgGuard",
+  "version": "2.0.0",
+  "author": "[https://github.com/codedbyjake Jake Linford]",
+  "url": "https://github.com/codedbyjake/ImgGuard",
+  "description": "Screens uploaded images for explicit content before they're saved.",
+  "license-name": "MIT",
+  "type": "antispam",
+
+  "manifest_version": 2,
+
+  "AutoloadNamespaces": {
+    "MediaWiki\\Extension\\ImgGuard\\": "includes/"
+  },
+
+  "AvailableRights": [
+    "imgguard-bypass",
+    "imgguard-log",
+    "imgguard-autoblock-exempt"
+  ],
+
+  "GroupPermissions": {
+    "sysop": {
+      "imgguard-bypass": true,
+      "imgguard-log": true,
+      "imgguard-autoblock-exempt": true
+    }
+  },
+
+  "LogTypes": [
+    "imgguard"
+  ],
+
+  "LogRestrictions": {
+    "imgguard": "imgguard-log"
+  },
+
+  "LogActionsHandlers": {
+    "imgguard/reject": "LogFormatter",
+    "imgguard/monitor": "LogFormatter",
+    "imgguard/fail": "LogFormatter",
+    "imgguard/pass": "LogFormatter",
+    "imgguard/borderline": "LogFormatter",
+    "imgguard/autoblock": "LogFormatter"
+  },
+
+  "HookHandlers": {
+    "main": {
+      "class": "MediaWiki\\Extension\\ImgGuard\\Hooks",
+      "services": [
+        "MainConfig",
+        "ImgGuardClassifier",
+        "MimeAnalyzer",
+        "BlockUserFactory",
+        "ActorNormalization",
+        "ConnectionProvider"
+      ]
+    }
+  },
+
+  "Hooks": {
+    "UploadVerifyUpload": "main",
+    "UploadStashFile": "main"
+  },
+
+  "MessagesDirs": {
+    "ImgGuard": [
+      "i18n"
+    ]
+  },
+
+  "ServiceWiringFiles": [
+    "includes/ServiceWiring.php"
+  ],
+
+  "config": {
+    "ImgGuardEnforce": {
+      "value": false,
+      "description": "Whether flagged uploads are actually rejected. When false, ImgGuard only logs what it would have done."
+    },
+    "ImgGuardLogPasses": {
+      "value": false,
+      "description": "Whether to log the score of every upload that passes, not just flagged or failed ones."
+    },
+    "ImgGuardFailClosed": {
+      "value": true,
+      "description": "Whether uploads are rejected if classification does not complete."
+    },
+    "ImgGuardSfwThreshold": {
+      "value": 0.5,
+      "description": "Minimum SFW probability required for an upload to pass."
+    },
+    "ImgGuardScriptPath": {
+      "value": "/wiki/imgguard/classify.py",
+      "description": "Path to the classification script."
+    },
+    "ImgGuardModelPath": {
+      "value": "/wiki/imgguard/model.onnx",
+      "description": "Path to the ONNX model file."
+    },
+    "ImgGuardTimeout": {
+      "value": 60,
+      "description": "Maximum seconds to allow the classification script to run."
+    },
+    "ImgGuardMemoryLimit": {
+      "value": 1048576,
+      "description": "Maximum memory (in KB) the classification script may use. Overrides $wgMaxShellMemory for this script."
+    },
+    "ImgGuardMaxConcurrent": {
+      "value": 4,
+      "description": "Maximum classifications allowed to run at once across all web workers. 0 disables the limit."
+    },
+    "ImgGuardCacheTtl": {
+      "value": 2592000,
+      "description": "How long (in seconds) a file's classification verdict is cached."
+    },
+    "ImgGuardFailureCacheTtl": {
+      "value": 60,
+      "description": "How long (in seconds) a classification failure is negative-cached."
+    },
+    "ImgGuardEligibleMimeTypes": {
+      "value": [
+        "application/pdf",
+        "application/ogg",
+        "image/vnd.djvu",
+        "image/x.djvu",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.oasis.opendocument.text",
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.oasis.opendocument.presentation",
+        "application/msword",
+        "application/vnd.ms-excel",
+        "application/vnd.ms-powerpoint"
+      ],
+      "description": "Extra MIME types to classify beyond the built-in image/* and video/* match, matched against the sniffed content type. Other uploads pass through unchecked."
+    },
+    "ImgGuardBorderlineMargin": {
+      "value": 0.15,
+      "description": "An upload that passes but scores within this margin above ImgGuardSfwThreshold is logged as imgguard/borderline instead of imgguard/pass."
+    },
+    "ImgGuardAutoBlockEnabled": {
+      "value": false,
+      "description": "Whether a user is automatically blocked after ImgGuardAutoBlockThreshold real (enforced) rejections. Users with imgguard-autoblock-exempt are exempt."
+    },
+    "ImgGuardAutoBlockThreshold": {
+      "value": 3,
+      "description": "Number of real (enforced) imgguard/reject log entries, within ImgGuardAutoBlockWindow, that triggers an automatic block."
+    },
+    "ImgGuardAutoBlockWindow": {
+      "value": "30 days",
+      "description": "How far back to count real rejections toward ImgGuardAutoBlockThreshold, as a string accepted by strtotime()."
+    },
+    "ImgGuardAutoBlockDuration": {
+      "value": "3 days",
+      "description": "Duration of the automatic block, as a string accepted by strtotime()."
+    }
+  }
+}

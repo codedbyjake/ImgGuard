@@ -1,0 +1,21 @@
+{
+    "@metadata": {
+        "authors": [
+            "codedbyjake"
+        ]
+    },
+    "right-imgguard-bypass": "{{doc-right|imgguard-bypass}}",
+    "right-imgguard-log": "{{doc-right|imgguard-log}}",
+    "right-imgguard-autoblock-exempt": "{{doc-right|imgguard-autoblock-exempt}}",
+    "imgguard-rejected": "Shown to the uploader when a file is rejected by ImgGuard.",
+    "imgguard-busy": "Shown to the uploader when ImgGuard was unable to screen the file because it was already at capacity.",
+    "log-name-imgguard": "{{doc-log-name|imgguard}}",
+    "log-description-imgguard": "{{doc-log-description|imgguard}}",
+    "logentry-imgguard-reject": "{{doc-logentry|imgguard|reject}}\n\nParameters:\n* $1 - the performer (with tool links)\n* $2 - the performer's plain username\n* $3 - the uploaded file's page\n* $6 - SFW score, the number compared against ImgGuardSfwThreshold",
+    "logentry-imgguard-monitor": "{{doc-logentry|imgguard|monitor}}\n\nParameters:\n* $1 - the performer (with tool links)\n* $2 - the performer's plain username\n* $3 - the uploaded file's page\n* $6 - SFW score, the number compared against ImgGuardSfwThreshold",
+    "logentry-imgguard-fail": "{{doc-logentry|imgguard|fail}}\n\nParameters:\n* $1 - the performer (with tool links)\n* $2 - the performer's plain username\n* $3 - the uploaded file's page\n* $15 - short code for why screening did not complete",
+    "logentry-imgguard-pass": "{{doc-logentry|imgguard|pass}}\n\nParameters:\n* $1 - the performer (with tool links)\n* $2 - the performer's plain username\n* $3 - the uploaded file's page\n* $6 - SFW score, the number compared against ImgGuardSfwThreshold",
+    "logentry-imgguard-borderline": "{{doc-logentry|imgguard|borderline}} Logged for an upload that passed but scored within ImgGuardBorderlineMargin of the threshold.\n\nParameters:\n* $1 - the performer (with tool links)\n* $2 - the performer's plain username\n* $3 - the uploaded file's page\n* $6 - SFW score, the number compared against ImgGuardSfwThreshold",
+    "logentry-imgguard-autoblock": "{{doc-logentry|imgguard|autoblock}} Logged when the ImgGuard system user automatically blocks a user.\n\nParameters:\n* $1 - the performer (the ImgGuard system user, with tool links)\n* $2 - the performer's plain username\n* $3 - the blocked user's page\n* $4 - block duration\n* $5 - number of prior rejections that triggered the block",
+    "imgguard-autoblock-reason": "Block reason used for ImgGuard's automatic block, shown in Special:BlockList and Special:Log/block."
+}
