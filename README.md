@@ -16,6 +16,8 @@ Formats scanned:
 
 Multi-page, multi-frame and container formats are scanned throughout, not only their first page or frame. The worst score across everything scanned is the one that counts.
 
+Two models score every view. Each view is resized once and shared between them, so the second costs one inference rather than another decode. The lower of the two safe scores is the one kept.
+
 A file that cannot be screened is rejected. `$wgImgGuardFailClosed` controls this.
 
 Repeated real rejections within `$wgImgGuardAutoBlockWindow` auto-block a user. Off by default.
@@ -43,6 +45,7 @@ Granted to `sysop` by default.
 - `$wgImgGuardFailureCacheTtl` (default `60`): how long a classification failure is negative-cached.
 - `$wgImgGuardEligibleMimeTypes`: extra MIME types to scan beyond `image/*` and `video/*`. Defaults to PDF, DjVu, Ogg and office documents.
 - `$wgImgGuardScriptPath` / `$wgImgGuardModelPath`: paths to the classification script and ONNX model.
+- `$wgImgGuardMatureModelPath` (default `/wiki/imgguard/mature.onnx`): second ONNX model. Empty disables it and falls back to a single model.
 - `$wgImgGuardLogPasses` (default `false`): log every passing upload's score, not just flagged or failed ones.
 - `$wgImgGuardAutoBlockEnabled` (default `false`): automatically block a user after repeated real rejections.
 - `$wgImgGuardAutoBlockThreshold` (default `3`): number of real `imgguard/reject` log entries, within `$wgImgGuardAutoBlockWindow`, that triggers the block.
@@ -72,4 +75,4 @@ ImgGuard/
 
 ## License
 
-MIT
+GPL-2.0-or-later

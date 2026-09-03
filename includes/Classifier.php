@@ -92,13 +92,22 @@ class Classifier {
 		$budgetSeconds = max( 10, min( $timeout * 0.5, $timeout - 15 ) );
 
 		try {
-			$result = Shell::command(
+			$args = [
 				'python3',
 				$this->config->get( 'ImgGuardScriptPath' ),
 				'--budget-seconds', (string)$budgetSeconds,
-				$this->config->get( 'ImgGuardModelPath' ),
-				$path
-			)
+			];
+
+			$matureModel = $this->config->get( 'ImgGuardMatureModelPath' );
+			if ( is_string( $matureModel ) && $matureModel !== '' ) {
+				$args[] = '--mature-model';
+				$args[] = $matureModel;
+			}
+
+			$args[] = $this->config->get( 'ImgGuardModelPath' );
+			$args[] = $path;
+
+			$result = Shell::command( $args )
 				->limits( [
 					'time' => $timeout,
 					'walltime' => $timeout,

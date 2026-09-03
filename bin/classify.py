@@ -8,6 +8,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import extract
 
 LABELS = ["nsfl", "nsfw", "sfw"]
+MATURE_LABELS = ["anime", "hentai", "neutral", "pornography", "sensual"]
+MATURE_UNSAFE_LABELS = ("hentai", "pornography")
 IMAGE_SIZE = 224
 DHASH_SIZE = 8
 DHASH_DUP_THRESHOLD = 0
@@ -100,18 +102,43 @@ def _tiles_for(image, max_tiles):
     return tiles[:max_tiles]
 
 
-def _score_image(session, np, image):
+def _softmax(np, values):
+    shifted = np.exp(values - np.max(values))
+    return shifted / shifted.sum()
+
+
+def _score_image(session, mature, np, image):
     resized = image.convert("RGB").resize((IMAGE_SIZE, IMAGE_SIZE), 2)
     array = np.asarray(resized, dtype=np.float32).transpose(2, 0, 1)[np.newaxis, :, :, :]
-    outputs = session.run(None, {"image": array})
-    scores = outputs[0][0]
-    return {label: float(score) for label, score in zip(LABELS, scores)}
+    scores = session.run(None, {"image": array})[0][0]
+    result = {label: float(score) for label, score in zip(LABELS, scores)}
+
+    if mature is not None:
+        session2, input_name = mature
+        raw = session2.run(None, {input_name: array / 127.5 - 1.0})[0][0]
+        probabilities = _softmax(np, raw)
+        detail = {label: float(p) for label, p in zip(MATURE_LABELS, probabilities)}
+        unsafe = sum(detail[label] for label in MATURE_UNSAFE_LABELS)
+        result["mature"] = detail
+        if 1.0 - unsafe < result["sfw"]:
+            result["sfw"] = 1.0 - unsafe
+    return result
 
 
 def main():
     argv = sys.argv[1:]
     inventory_only = "--inventory" in argv
     argv = [a for a in argv if a != "--inventory"]
+
+    mature_model_path = None
+    if "--mature-model" in argv:
+        idx = argv.index("--mature-model")
+        try:
+            mature_model_path = argv[idx + 1]
+        except IndexError:
+            print("usage: classify.py [--mature-model M] [--budget-seconds N] <model.onnx> <path>", file=sys.stderr)
+            return 1
+        argv = argv[:idx] + argv[idx + 2:]
 
     budget_seconds = None
     if "--budget-seconds" in argv:
@@ -187,6 +214,13 @@ def main():
         model_path, sess_options=options, providers=["CPUExecutionProvider"]
     )
 
+    mature = None
+    if mature_model_path:
+        mature_session = onnxruntime.InferenceSession(
+            mature_model_path, sess_options=options, providers=["CPUExecutionProvider"]
+        )
+        mature = (mature_session, mature_session.get_inputs()[0].name)
+
     worst_view = None
     worst_score = None
     scanned = 0
@@ -194,7 +228,7 @@ def main():
     for frame in kept:
         for tile_index, tile in enumerate(_tiles_for(frame.image, per_frame_views)):
             scanned += 1
-            score = _score_image(session, np, tile)
+            score = _score_image(session, mature, np, tile)
             view_name = frame.view if tile_index == 0 else f"{frame.view}:tile{tile_index}"
             if worst_score is None or score["sfw"] < worst_score["sfw"]:
                 worst_score = score

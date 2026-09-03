@@ -4,7 +4,7 @@
   "author": "[https://github.com/codedbyjake Jake Linford]",
   "url": "https://github.com/codedbyjake/ImgGuard",
   "description": "Screens uploaded images for explicit content before they're saved.",
-  "license-name": "MIT",
+  "license-name": "GPL-2.0-or-later",
   "type": "antispam",
 
   "manifest_version": 2,
@@ -97,6 +97,10 @@
     "ImgGuardModelPath": {
       "value": "/wiki/imgguard/model.onnx",
       "description": "Path to the ONNX model file."
+    },
+    "ImgGuardMatureModelPath": {
+      "value": "/wiki/imgguard/mature.onnx",
+      "description": "Path to a second ONNX model. Each view is scored by both models and the lower safe score is kept. Empty disables it."
     },
     "ImgGuardTimeout": {
       "value": 60,
