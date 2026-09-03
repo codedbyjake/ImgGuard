@@ -944,7 +944,7 @@ class Extraction:
             return None
         try:
             result = _run_limited(
-                ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", self.path],
+                ["ffprobe", "-v", "error", "-protocol_whitelist", "file", "-show_entries", "format=duration", "-of", "csv=p=0", self.path],
                 timeout=15,
             )
             return float(result.stdout.decode().strip())
@@ -957,7 +957,7 @@ class Extraction:
         os.unlink(out_path)
         try:
             check_ts = duration + 2.0
-            cmd = ["ffmpeg", "-y", "-ss", f"{check_ts:.3f}", "-i", self.path, "-frames:v", "1", out_path]
+            cmd = ["ffmpeg", "-y", "-protocol_whitelist", "file", "-ss", f"{check_ts:.3f}", "-i", self.path, "-frames:v", "1", out_path]
             _run_limited(cmd, timeout=15, max_bytes=4_000_000_000)
             found_content_past_claimed_end = os.path.exists(out_path) and os.path.getsize(out_path) > 0
             return not found_content_past_claimed_end
@@ -1094,7 +1094,7 @@ class Extraction:
             return [None]
         try:
             result = _run_limited(
-                ["ffprobe", "-v", "error", "-select_streams", "v",
+                ["ffprobe", "-v", "error", "-protocol_whitelist", "file", "-select_streams", "v",
                  "-show_entries", "stream=index", "-of", "csv=p=0", self.path],
                 timeout=15,
             )
@@ -1108,7 +1108,7 @@ class Extraction:
         scene_dir = tempfile.mkdtemp(prefix="imgguard-vscene-", dir=out_dir)
         pattern = os.path.join(scene_dir, "scene-%04d.png")
         cmd = [
-            "ffmpeg", "-y", "-i", self.path, *mapping,
+            "ffmpeg", "-y", "-protocol_whitelist", "file", "-i", self.path, *mapping,
             "-vf", f"select='gt(scene,{VIDEO_SCENE_THRESHOLD})'",
             "-vsync", "vfr", "-frames:v", str(limit), pattern,
         ]
@@ -1165,7 +1165,7 @@ class Extraction:
                         ts = duration * (index + 0.5) / max(1, per_stream - spent_here)
                         out_path = os.path.join(out_dir, f"{label.replace(':','_')}frame-{index:04d}.png")
                         cmd = [
-                            "ffmpeg", "-y", "-ss", f"{ts:.3f}", "-i", self.path,
+                            "ffmpeg", "-y", "-protocol_whitelist", "file", "-ss", f"{ts:.3f}", "-i", self.path,
                             *mapping, "-frames:v", "1", out_path,
                         ]
                         try:
@@ -1182,7 +1182,7 @@ class Extraction:
                 stream_dir = tempfile.mkdtemp(prefix="imgguard-vseq-", dir=out_dir)
                 pattern = os.path.join(stream_dir, "frame-%04d.png")
                 cmd = [
-                    "ffmpeg", "-y", "-i", self.path, *mapping,
+                    "ffmpeg", "-y", "-protocol_whitelist", "file", "-i", self.path, *mapping,
                     "-vf", "fps=1", "-frames:v", str(per_stream),
                     pattern,
                 ]
