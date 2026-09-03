@@ -51,9 +51,6 @@ class Classifier {
 		);
 	}
 
-	/**
-	 * @return string|null Slot key to release, '' when unlimited, null when none came free.
-	 */
 	private function acquireSlot(): ?string {
 		$max = (int)$this->config->get( 'ImgGuardMaxConcurrent' );
 		if ( $max <= 0 ) {

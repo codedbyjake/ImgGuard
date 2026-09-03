@@ -9,7 +9,7 @@ import extract
 
 LABELS = ["nsfl", "nsfw", "sfw"]
 MATURE_LABELS = ["anime", "hentai", "neutral", "pornography", "sensual"]
-MATURE_UNSAFE_LABELS = ("hentai", "pornography")
+MATURE_UNSAFE_LABELS = ("hentai", "pornography", "sensual")
 IMAGE_SIZE = 224
 DHASH_SIZE = 8
 DHASH_DUP_THRESHOLD = 0

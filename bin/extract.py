@@ -218,9 +218,13 @@ def _svg_apply_animation_end_state(root):
                 applied = True
                 continue
             attribute = child.get("attributeName")
-            if attribute:
-                parent.set(attribute, value)
-                applied = True
+            if not attribute or ":" in attribute:
+                continue
+            lowered = attribute.lower()
+            if lowered.startswith("on") or lowered in ("href", "src"):
+                continue
+            parent.set(attribute, value)
+            applied = True
     return applied
 
 
@@ -488,8 +492,6 @@ _TRAILING_SIGNATURES = (
 
 
 class _SliceReader(io.RawIOBase):
-    """File-like view starting at an offset."""
-
     def __init__(self, view, offset):
         self._view = view
         self._start = offset
