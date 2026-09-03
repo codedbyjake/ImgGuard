@@ -16,10 +16,10 @@ DHASH_DUP_THRESHOLD = 0
 COLOR_GRID = 4
 COLOR_DUP_THRESHOLD = 2 * COLOR_GRID * COLOR_GRID
 TILE_ASPECT_THRESHOLD = 3
-TILE_AREA_THRESHOLD = 2_560_000
-TARGET_TILE_DIM = 1400
+TILE_AREA_THRESHOLD = 250_000
+TARGET_TILE_DIM = 450
 MAX_TILES_PER_AXIS = 16
-MAX_VIEWS = 256
+MAX_VIEWS = 96
 DEFAULT_THREADS = 4
 CONTAINER_FORMATS = ("office", "office-legacy", "ogg")
 
@@ -180,8 +180,13 @@ def main():
         print(json.dumps({"error": "unsupported-format", "message": str(exc), "flags": {}}), file=sys.stderr)
         return 3
 
+    from PIL import Image as _PilImage
+
     try:
         frames = list(extraction.iter_frames())
+    except _PilImage.DecompressionBombError as exc:
+        print(json.dumps({"error": "image-too-large", "message": str(exc), "flags": extraction.flags}), file=sys.stderr)
+        return 2
     except extract.BudgetExceeded as exc:
         print(json.dumps({"error": "budget-exceeded", "message": str(exc), "flags": extraction.flags}), file=sys.stderr)
         return 2
