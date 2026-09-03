@@ -20,6 +20,7 @@ TILE_AREA_THRESHOLD = 2_560_000
 TARGET_TILE_DIM = 1400
 MAX_TILES_PER_AXIS = 16
 MAX_VIEWS = 256
+DEFAULT_THREADS = 4
 CONTAINER_FORMATS = ("office", "office-legacy", "ogg")
 
 
@@ -130,6 +131,16 @@ def main():
     inventory_only = "--inventory" in argv
     argv = [a for a in argv if a != "--inventory"]
 
+    threads = DEFAULT_THREADS
+    if "--threads" in argv:
+        idx = argv.index("--threads")
+        try:
+            threads = max(1, int(argv[idx + 1]))
+        except (IndexError, ValueError):
+            print("usage: classify.py [--threads N] [--mature-model M] [--budget-seconds N] <model.onnx> <path>", file=sys.stderr)
+            return 1
+        argv = argv[:idx] + argv[idx + 2:]
+
     mature_model_path = None
     if "--mature-model" in argv:
         idx = argv.index("--mature-model")
@@ -208,7 +219,7 @@ def main():
     import onnxruntime
 
     options = onnxruntime.SessionOptions()
-    options.intra_op_num_threads = 1
+    options.intra_op_num_threads = threads
     options.inter_op_num_threads = 1
     session = onnxruntime.InferenceSession(
         model_path, sess_options=options, providers=["CPUExecutionProvider"]

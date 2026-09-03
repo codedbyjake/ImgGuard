@@ -96,6 +96,7 @@ class Classifier {
 				'python3',
 				$this->config->get( 'ImgGuardScriptPath' ),
 				'--budget-seconds', (string)$budgetSeconds,
+				'--threads', (string)(int)$this->config->get( 'ImgGuardThreads' ),
 			];
 
 			$matureModel = $this->config->get( 'ImgGuardMatureModelPath' );

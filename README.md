@@ -40,6 +40,7 @@ Granted to `sysop` by default.
 - `$wgImgGuardBorderlineMargin` (default `0.15`): a pass within this margin above the threshold is logged as `imgguard/borderline` instead of `imgguard/pass`.
 - `$wgImgGuardTimeout` (default `60`): max seconds to allow for scoring.
 - `$wgImgGuardMemoryLimit` (default `1048576`, 1 GB in KB): memory ceiling for the classifier, replacing `$wgMaxShellMemory` for this script.
+- `$wgImgGuardThreads` (default `4`): CPU threads each classification may use. Multiplied by `$wgImgGuardMaxConcurrent`, keep this at or below the host's core count.
 - `$wgImgGuardMaxConcurrent` (default `4`): how many classifications may run at once across all web workers. `0` disables the limit.
 - `$wgImgGuardCacheTtl` (default `2592000`, 30 days): how long a file's score is cached.
 - `$wgImgGuardFailureCacheTtl` (default `60`): how long a classification failure is negative-cached.

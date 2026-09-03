@@ -110,6 +110,10 @@
       "value": 1048576,
       "description": "Maximum memory (in KB) the classification script may use. Overrides $wgMaxShellMemory for this script."
     },
+    "ImgGuardThreads": {
+      "value": 4,
+      "description": "CPU threads each classification may use. Multiplied by ImgGuardMaxConcurrent this should stay at or below the host's core count."
+    },
     "ImgGuardMaxConcurrent": {
       "value": 4,
       "description": "Maximum classifications allowed to run at once across all web workers. 0 disables the limit."
