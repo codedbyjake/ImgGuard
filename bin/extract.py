@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import struct
+import shlex
 import subprocess
 import tempfile
 import time
@@ -14,6 +15,10 @@ from shutil import which
 from urllib.parse import unquote_to_bytes
 
 JPEG_EXTENSIONS = (".jpg", ".jpeg")
+
+VIDEO_MAX_SAMPLES = 48
+VIDEO_SCENE_THRESHOLD = 0.3
+VIDEO_SCENE_TIMEOUT = 40
 
 _SVG_STRIP_ELEMENTS = {
     "script", "foreignObject", "animate", "animateTransform", "animateMotion", "set", "handler",
@@ -194,6 +199,31 @@ def _strip_css_concealment(css):
     return _CSS_DECL_RE.sub(repl, css)
 
 
+def _svg_apply_animation_end_state(root):
+    applied = False
+    for parent in root.iter():
+        for child in list(parent):
+            local = _local_name(child.tag)
+            if local not in ("animate", "set", "animateTransform"):
+                continue
+            value = child.get("to")
+            if value is None:
+                values = child.get("values")
+                if values:
+                    value = values.rsplit(";", 1)[-1].strip()
+            if value is None:
+                continue
+            if local == "animateTransform":
+                parent.set("transform", f"{child.get('type', 'translate')}({value})")
+                applied = True
+                continue
+            attribute = child.get("attributeName")
+            if attribute:
+                parent.set(attribute, value)
+                applied = True
+    return applied
+
+
 def _svg_strip_concealment(root):
     for el in root.iter():
         if _local_name(el.tag).lower() == "style" and el.text:
@@ -290,16 +320,21 @@ def _which_svg_rasterizer():
 
 
 def _run_limited(cmd, timeout, max_bytes=1_500_000_000, max_file_bytes=2_000_000_000):
-    import resource
+    quoted = " ".join(shlex.quote(str(part)) for part in cmd)
+    wrapped = [
+        "/bin/sh", "-c",
+        f"ulimit -v {max_bytes // 1024}; ulimit -t {timeout}; "
+        f"ulimit -f {max_file_bytes // 1024}; exec {quoted}",
+    ]
 
-    def _limits():
-        resource.setrlimit(resource.RLIMIT_AS, (max_bytes, max_bytes))
-        resource.setrlimit(resource.RLIMIT_CPU, (timeout, timeout))
-        resource.setrlimit(resource.RLIMIT_FSIZE, (max_file_bytes, max_file_bytes))
-
-    env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": "/tmp"}
+    env = {
+        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        "HOME": "/tmp",
+        "MAGICK_THREAD_LIMIT": "1",
+        "OMP_NUM_THREADS": "1",
+    }
     result = subprocess.run(
-        cmd, timeout=timeout, capture_output=True, preexec_fn=_limits, env=env,
+        wrapped, timeout=timeout, capture_output=True, env=env,
     )
     if result.returncode != 0:
         raise RuntimeError(f"{cmd[0]} failed (exit {result.returncode}): {result.stderr[:500]!r}")
@@ -805,6 +840,14 @@ class Extraction:
         self.budget.spend(1024, 1024)
         yield Frame("svg:reveal", _rasterize_svg(reveal_bytes))
 
+        animated_root = copy.deepcopy(root)
+        if _svg_apply_animation_end_state(animated_root):
+            self.flags["svg_animated"] = True
+            _svg_strip_dangerous(animated_root)
+            _svg_strip_concealment(animated_root)
+            self.budget.spend(1024, 1024)
+            yield Frame("svg:animated", _rasterize_svg(ET.tostring(animated_root)))
+
         for index, image in enumerate(_extract_data_uri_images(raw, self.budget)):
             yield Frame(f"svg:data-uri:{index}", image)
 
@@ -1057,6 +1100,25 @@ class Extraction:
         except Exception:
             return [None]
 
+    def _sample_scene_changes(self, out_dir, label, mapping, limit):
+        from PIL import Image
+
+        scene_dir = tempfile.mkdtemp(prefix="imgguard-vscene-", dir=out_dir)
+        pattern = os.path.join(scene_dir, "scene-%04d.png")
+        cmd = [
+            "ffmpeg", "-y", "-i", self.path, *mapping,
+            "-vf", f"select='gt(scene,{VIDEO_SCENE_THRESHOLD})'",
+            "-vsync", "vfr", "-frames:v", str(limit), pattern,
+        ]
+        try:
+            _run_limited(cmd, timeout=VIDEO_SCENE_TIMEOUT, max_bytes=4_000_000_000)
+        except Exception:
+            return
+        for name in sorted(os.listdir(scene_dir)):
+            self.budget.check()
+            with Image.open(os.path.join(scene_dir, name)) as im:
+                yield f"video:{label}{os.path.splitext(name)[0]}", im.convert("RGB").copy()
+
     def _iter_video(self):
         from PIL import Image
 
@@ -1074,8 +1136,9 @@ class Extraction:
         streams = self._probe_video_streams() or [None]
         if len(streams) > 1:
             self.flags["video_multiple_streams"] = True
-        budget_total = min(remaining, 32)
+        budget_total = min(remaining, VIDEO_MAX_SAMPLES)
         per_stream = max(2, budget_total // len(streams))
+        scene_quota = per_stream // 2
 
         out_dir = tempfile.mkdtemp(prefix="imgguard-video-")
         try:
@@ -1083,12 +1146,21 @@ class Extraction:
                 label = "" if stream is None else f"s{stream}:"
                 mapping = [] if stream is None else ["-map", f"0:{stream}"]
 
+                spent_here = 0
+                if duration and duration > 0 and scene_quota > 0:
+                    for name, img in self._sample_scene_changes( out_dir, label, mapping, scene_quota ):
+                        if self.budget.frames_spent >= self.budget.max_frames:
+                            return
+                        self.budget.spend(*img.size)
+                        spent_here += 1
+                        yield Frame(name, img)
+
                 if duration and duration > 0:
-                    for index in range(per_stream):
+                    for index in range(per_stream - spent_here):
                         if self.budget.frames_spent >= self.budget.max_frames:
                             return
                         self.budget.check()
-                        ts = duration * (index + 0.5) / per_stream
+                        ts = duration * (index + 0.5) / max(1, per_stream - spent_here)
                         out_path = os.path.join(out_dir, f"{label.replace(':','_')}frame-{index:04d}.png")
                         cmd = [
                             "ffmpeg", "-y", "-ss", f"{ts:.3f}", "-i", self.path,

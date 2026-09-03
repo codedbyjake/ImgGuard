@@ -14,7 +14,7 @@ Formats scanned:
 - Video, including Ogg/Theora
 - Office documents
 
-Multi-page, multi-frame and container formats are scanned throughout, not only their first page or frame. The worst score across everything scanned is the one that counts.
+Multi-page, multi-frame and container formats are scanned throughout, not only their first page or frame. Video is the exception: it is sampled across its runtime, favouring scene changes, rather than scanned frame by frame. The worst score across everything scanned is the one that counts.
 
 Two models score every view. Each view is resized once and shared between them, so the second costs one inference rather than another decode. The lower of the two safe scores is the one kept.
 
