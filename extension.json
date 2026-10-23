@@ -27,6 +27,17 @@
     }
   },
 
+  "GrantPermissions": {
+    "uploadfile": {
+      "imgguard-bypass": true,
+      "imgguard-autoblock-exempt": true
+    },
+    "uploadeditmovefile": {
+      "imgguard-bypass": true,
+      "imgguard-autoblock-exempt": true
+    }
+  },
+
   "LogTypes": [
     "imgguard"
   ],
