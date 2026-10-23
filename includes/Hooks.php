@@ -16,6 +16,8 @@ use Wikimedia\Rdbms\IConnectionProvider;
 
 class Hooks implements UploadVerifyUploadHook, UploadStashFileHook {
 
+	private array $results = [];
+
 	public function __construct(
 		private readonly Config $config,
 		private readonly Classifier $classifier,
@@ -65,20 +67,29 @@ class Hooks implements UploadVerifyUploadHook, UploadStashFileHook {
 			return $this->abstain( 'hash-failed', $user, $title, $error );
 		}
 
+		if ( !array_key_exists( $cacheKey, $this->results ) ) {
+			$this->results[$cacheKey] = $this->screen( $cacheKey, $path, $user, $title );
+		}
+		if ( $this->results[$cacheKey] !== null ) {
+			$error = $this->results[$cacheKey];
+			return false;
+		}
+		return true;
+	}
+
+	private function screen( string $cacheKey, string $path, User $user, ?Title $title ): ?array {
 		$verdict = $this->classifier->getVerdict( $cacheKey, $path );
 
 		if ( $verdict === null || !isset( $verdict['sfw'] ) ) {
 			$reason = $verdict['error'] ?? 'error';
 			$this->log( 'fail', $user, $title, [], $reason );
 			if ( $reason === 'busy' ) {
-				$error = [ 'imgguard-busy' ];
-				return false;
+				return [ 'imgguard-busy' ];
 			}
 			if ( $this->config->get( 'ImgGuardFailClosed' ) ) {
-				$error = [ 'imgguard-rejected' ];
-				return false;
+				return [ 'imgguard-rejected' ];
 			}
-			return true;
+			return null;
 		}
 
 		$threshold = $this->config->get( 'ImgGuardSfwThreshold' );
@@ -95,11 +106,10 @@ class Hooks implements UploadVerifyUploadHook, UploadStashFileHook {
 		}
 
 		if ( $flagged && $enforce ) {
-			$error = [ 'imgguard-rejected' ];
-			return false;
+			return [ 'imgguard-rejected' ];
 		}
 
-		return true;
+		return null;
 	}
 
 	private function abstain( string $reason, User $user, ?Title $title, &$error ): bool {
